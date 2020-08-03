@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="dist/umd/vue.js"></script>
+  <script>
+    // options Api 通过一个选项进行配置
+    let vm = new Vue({
+      el: '#app',
+      data() {
+        // return { a: { a: { a: 1 } } }  情况1 和 情况 2
+        // return { a: [1, 2, 3] }  情况3
+        return { arr: [{ a: 1 }] }  // 情况4
+      }
+    })
+
+    //  情况1 蹭蹭递归对象的每个属性
+    // 默认每个数据会递归去用defineProperty进行拦截，性能差
+    // console.log(vm._data.a.a.a)
+
+    // 情况2 重新设置的值  也是对象形式
+    // vm._data.a = {b:1}
+    // vm._data.a.b = 100
+
+    // 为了性能考虑不对 数组的索引操作，而对可以改变数组的方法进行操作
+    // 情况3 return { a: [1, 2, 3] }
+    // console.log(vm._data.a.push('123'))
+
+    // 情况4 数组中的元素是对象类型
+    // vm._data.arr[0].a = 100;
+    // console.log(vm._data.arr)
+
+    // 情况5 往数组中添加元素 (对象类型) 也需要被观测，
+    // vm._data.arr.push({ b: 2 })
+    // vm._data.arr[1].b = 100;
+    // console.log(vm.arr)
+
+    // 渲染的操作 (ast解析template => render 函数 )
+    /*
+    1) 默认会先找render方法
+    2) 如果没有传入render方法，会查找template模板
+    3) 找当前el指定的元素中的内容来进行渲染
+    */
+
+  </script>
+</body>
+
+</html>

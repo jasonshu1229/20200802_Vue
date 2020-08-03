@@ -1,0 +1,5 @@
+{
+  "presets": [
+    "@babel/preset-env" // 把插件形式的代码 es6转成es5
+  ]
+}
