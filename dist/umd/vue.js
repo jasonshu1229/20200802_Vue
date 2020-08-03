@@ -249,29 +249,62 @@
 
   var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则 捕获的内容是标签名
 
+  var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>")); // 匹配标签结尾的 </div>
+
   var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的    aaa="aaa"  a='aaa'   a=aaa
 
   var startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >    >   <div></div>  <br/>
 
   function start(tagName, attrs) {
-    console.log(tagName, attrs); // 解析出 开始标签和属性
+    console.log(tagName, attrs, '----开始标签-----'); // 解析出 开始标签和属性
+  }
+
+  function end(tagName) {
+    console.log(tagName, '-----结束标签------');
+  }
+
+  function chars(text) {
+    console.log(text, '-----文本标签---');
   }
 
   function parseHTML(html) {
     while (html) {
       // 只要html不为空，就一直解析
-      var textEnd = html.indexOf('<');
+      var textEnd = html.indexOf('<'); // 从html字符串中找 如果找到 < 则返回 0，否则为-1
 
       if (textEnd == 0) {
         // 肯定是标签
-        var startTagMath = parseStartTag(); // 开始标签匹配的结果
+        var startTagMath = parseStartTag(); // 开始标签匹配的结果 处理开始
 
         if (startTagMath) {
           start(startTagMath.tagName, startTagMath.attrs);
+          continue;
         }
 
-        break;
+        var endTagMatch = html.match(endTag);
+
+        if (endTagMatch) {
+          // 处理结束标签
+          advance(endTagMatch[0].length);
+          end(endTagMatch[1]); // 将结束标签传入
+
+          continue;
+        }
       }
+
+      var text = void 0;
+
+      if (textEnd > 0) {
+        // 是文本 处理文本
+        text = html.substring(0, textEnd); // 把文本过滤出来
+      }
+
+      if (text) {
+        // 处理文本
+        advance(text.length);
+        chars(text);
+      } // break;
+
     }
     /**
      * 切割元素标签中的字符串，方便后续解析
@@ -311,7 +344,7 @@
 
         if (_end) {
           // >
-          advance(_end[0]); // 去掉 >
+          advance(_end[0].length); // 去掉 >
 
           return match;
         }
