@@ -237,6 +237,102 @@
     observe(data); // 此时的data是函数执行后的结果
   }
 
+  /*
+    <div id="app">
+      <div>hello {{school.name}} <span>world</span></div>
+    </div>
+  */
+  var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // 标签名
+  // ?:匹配不捕获
+
+  var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")"); // </my:xx>
+
+  var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则 捕获的内容是标签名
+
+  var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的    aaa="aaa"  a='aaa'   a=aaa
+
+  var startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >    >   <div></div>  <br/>
+
+  function start(tagName, attrs) {
+    console.log(tagName, attrs); // 解析出 开始标签和属性
+  }
+
+  function parseHTML(html) {
+    while (html) {
+      // 只要html不为空，就一直解析
+      var textEnd = html.indexOf('<');
+
+      if (textEnd == 0) {
+        // 肯定是标签
+        var startTagMath = parseStartTag(); // 开始标签匹配的结果
+
+        if (startTagMath) {
+          start(startTagMath.tagName, startTagMath.attrs);
+        }
+
+        break;
+      }
+    }
+    /**
+     * 切割元素标签中的字符串，方便后续解析
+     * @param {*} n 第几个字符
+     */
+
+
+    function advance(n) {
+      // 将字符串进行截取操作 再更新html内容
+      html = html.substring(n);
+    }
+
+    function parseStartTag() {
+      var start = html.match(startTagOpen);
+
+      if (start) {
+        var match = {
+          tagName: start[1],
+          attrs: []
+        }; //  console.log(start) // ["<div", "div", index: 0, input: "<div id="app">↵    <div id="“my”">hello {{school.name}} <span>world</span></div>↵  </div>", groups: undefined]
+        //  console.log(match) // {tagName: "div", attrs: Array(0)}
+
+        advance(start[0].length); // 删除开始标签
+        // console.log(html) //  id="app"> .. 
+        // 处理属性 （如果是闭合标签 说明没有属性） 
+
+        var _end, attr; // 不是结尾标签 能匹配到属性
+
+
+        while (!(_end = html.match(startTagClose)) && (attr = html.match(attribute))) {
+          match.attrs.push({
+            name: attr[1],
+            value: attr[3] || attr[4] || attr[5]
+          });
+          advance(attr[0].length); // 去掉当前属性
+        }
+
+        if (_end) {
+          // >
+          advance(_end[0]); // 去掉 >
+
+          return match;
+        }
+      }
+    }
+  }
+  /**
+   * todo html模板 => render 函数
+   * @param {*} template 
+   */
+
+
+  function compileToFunctions(template) {
+    // 1、需要将html代码转换成 ast语法树 (可以用ast树来描述语言本身)
+    var ast = parseHTML(template); // 2、通过这棵树 重新的生成代码
+  }
+  /* 
+    ast语法树 是用来描述代码的，可以描述 css html js  (根据语法生成的固定逻辑)
+    虚拟dom 用来描述dom结构的
+  */
+
   //todo 进行初始化操作
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
@@ -258,11 +354,31 @@
 
 
     Vue.prototype.$mount = function (el) {
+      // 挂载操作
+      var vm = this;
+      var options = vm.$options;
+      console.log(options); // 先找到外层元素
 
-      console.log(document.querySelector('#app'));
+      el = document.querySelector(el); // 渲染的顺序 render > template > dom结构
+
+      if (!options.render) {
+        // 没render 将template转换成render方法
+        var template = options.template;
+
+        if (!template && el) {
+          template = el.outerHTML; // 外部模板
+        } // todo 编译原理 将模板编译成render函数
+
+
+        var render = compileToFunctions(template);
+        options.render = render;
+      }
+
+      console.log(options.render); // 渲染时用的都是这个render
+      // 有render 方法
     };
-  } // todo 面试：vue是mvvm框架么
-  // todo vue只是借鉴MVVM原理，因为vue可以使用$ref直接操作dom元素
+  } // 面试：vue是mvvm框架么
+  // vue只是借鉴MVVM原理，因为vue可以使用$ref直接操作dom元素
 
   // todo 该文件给构造函数的原型上扩展方法
   /**

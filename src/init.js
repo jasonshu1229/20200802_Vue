@@ -1,5 +1,6 @@
 //todo 进行初始化操作
-import { initState } from './state'
+import { initState } from './state';
+import { compileToFunctions } from './compiler/index'
 
 export function initMixin(Vue) {
   Vue.prototype._init = function(options) {
@@ -24,10 +25,26 @@ export function initMixin(Vue) {
   Vue.prototype.$mount = function (el) {
     // 挂载操作
     const vm = this;
-    // el = document.querySelector(el);
-    console.log(document.querySelector('#app'))
+    const options = vm.$options;
+    console.log(options)
+    // 先找到外层元素
+    el = document.querySelector(el);
+    // 渲染的顺序 render > template > dom结构
+    if (!options.render){
+      // 没render 将template转换成render方法
+      let template = options.template;
+      if(!template && el) {
+        template = el.outerHTML; // 外部模板
+      }
+      // todo 编译原理 将模板编译成render函数
+      const render = compileToFunctions(template);
+      options.render = render;
+    } 
+    console.log(options.render) // 渲染时用的都是这个render
+    // 有render 方法
+    
   }
 } 
 
-// todo 面试：vue是mvvm框架么
-// todo vue只是借鉴MVVM原理，因为vue可以使用$ref直接操作dom元素
+// 面试：vue是mvvm框架么
+// vue只是借鉴MVVM原理，因为vue可以使用$ref直接操作dom元素
